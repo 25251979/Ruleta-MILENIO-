@@ -381,16 +381,38 @@ function getLog(){return JSON.parse(localStorage.getItem('milenio_log')||'[]');}
 function saveLog(log){localStorage.setItem('milenio_log',JSON.stringify(log));}
 
 function registerSpin(won){
-  const log=getLog();
-  log.unshift({
-    won, ts:new Date().toISOString(),
+  const now = new Date();
+  const fecha = now.toLocaleDateString('es-AR');
+  const hora  = now.toLocaleTimeString('es-AR', {hour:'2-digit',minute:'2-digit'});
+  const entry = {
+    won, ts:now.toISOString(),
     nombre:currentParticipant?currentParticipant.nombre:'-',
     genero:currentParticipant?currentParticipant.genero:'-',
     edad:  currentParticipant?currentParticipant.edad:'-',
     marca: currentParticipant?currentParticipant.marca:'-',
     variedad:currentParticipant?currentParticipant.variedad:'-',
-  });
+  };
+  const log=getLog();
+  log.unshift(entry);
   saveLog(log);
+
+  // Enviar a Google Sheets
+  fetch('https://script.google.com/macros/s/AKfycbypfWJsbvpmvtLLtRlLAWMVkiHaWbetbEih1IDego_vWkCUpv5V_bwBGoROsV-40sWzZA/exec', {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      fecha,
+      hora,
+      nombre: entry.nombre,
+      genero: entry.genero,
+      edad:   entry.edad,
+      marca:  entry.marca,
+      variedad: entry.variedad,
+      resultado: won ? 'Premio' : 'Sin premio'
+    })
+  }).catch(()=>{});
+
   currentParticipant=null;
 }
 
